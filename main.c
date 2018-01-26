@@ -4,34 +4,37 @@
 #include <gsl/gsl_statistics.h>
 
 #define MAX_STATES_INITIAL 100000
-#define MAX_GATE_SHIFT 15000
+#define MAX_GATE_SHIFT 7000
 struct gate_state {
     long time;
     int gate_position;
 };
 
 
+int compare_int (const void *, const void *);
 int main(int argc, char *args[]) {
     int size_states = MAX_STATES_INITIAL;
+    char* filename;
     long *time_states = malloc(size_states * sizeof(*time_states));
     int *shift_states = malloc(size_states * sizeof(*shift_states));
     int fd;
     if (argc < 2) {
-        return 0;
-
+        filename="/home/irinaart/Documents/GateStates.txt_log.txt";
     }
+    else
+        filename = args[1];
     int lines_saved_done = 0;
     long total_gate_shift = 0, time_delta = 0;
     struct gate_state state_current, state_last;
     state_last.gate_position = 0;
     state_last.time = 0L;
 
-    fprintf(stdout, "Opening file: %s", args[1]);
+    fprintf(stdout, "Opening file: %s", filename);
     FILE *file_input;
     char *current_line = NULL;
     char *string_buffer = NULL;
     size_t length_read = 0;
-    file_input = fopen(args[1], "r");
+    file_input = fopen(filename, "r");
     if (file_input == NULL)
         exit(1);
 
@@ -53,8 +56,7 @@ int main(int argc, char *args[]) {
             total_gate_shift += shift_position;
             lines_saved_done++;
         }
-        else
-            continue;
+
         state_last.time = state_current.time;
         state_last.gate_position = state_current.gate_position;
         if (lines_saved_done > size_states - 3) {
@@ -73,20 +75,30 @@ int main(int argc, char *args[]) {
     free(string_buffer);
     fclose(file_input);
     printf("\n \n Total shifting is: %ld \n", total_gate_shift);
-//    for(int i=0;i<100;i++)
-//        printf(":%i",shift_states[i]);
+
 
     double mean, variance, largest, smallest;
 
-    mean     = gsl_stats_mean(shift_states, 1, lines_saved_done-1);
-    variance = gsl_stats_variance(shift_states, 1, lines_saved_done-1);
-    largest  = gsl_stats_max(shift_states, 1, lines_saved_done-1);
-    smallest = gsl_stats_min(shift_states, 1, lines_saved_done-1);
-
-    printf ("The sample mean is %g\n", mean);
-    printf ("The estimated variance is %g\n", variance);
-    printf ("The largest value is %g\n", largest);
-    printf ("The smallest value is %g\n", smallest);
+//    mean     = gsl_stats_mean(shift_states, 1, lines_saved_done-1);
+//    variance = gsl_stats_variance(shift_states, 1, lines_saved_done-1);
+//    largest  = gsl_stats_max(shift_states, 1, lines_saved_done-1);
+//    smallest = gsl_stats_min(shift_states, 1, lines_saved_done-1);
+//
+//    printf ("The sample mean is %g\n", mean);
+//    printf ("The estimated variance is %g\n", variance);
+//    printf ("The largest value is %g\n", largest);
+//    printf ("The smallest value is %g\n", smallest);
+    qsort(shift_states,lines_saved_done,sizeof(int),compare_int);
+    for(int i=lines_saved_done-2;i>lines_saved_done-1000;i--)
+        printf(":%i",shift_states[i]);
+//printf()
     return 0;
+}
+int compare_int (const void *a, const void *b)
+{
+    const int *da = (const int *) a;
+    const int *db = (const int *) b;
+
+    return (*da > *db) - (*da < *db);
 }
 
